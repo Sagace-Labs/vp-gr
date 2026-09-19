@@ -1,0 +1,61 @@
+schema = 1
+pathway = "gr"
+version = "v1"
+released = "2026-09-06"
+reason = "first release: binary XGBoost on Morgan, MACCS and RDKit descriptors over the Tox21 glucocorticoid-receptor screens"
+
+[signature]
+version = 1
+inputs = ["smiles"]
+
+[[signature.outputs]]
+name = "gr_agonist"
+dtype = "float32"
+range = [0.0, 1.0]
+semantics = "P(activates the glucocorticoid receptor reporter in the Tox21 qHTS agonist screen)"
+missing = "NaN when RDKit cannot parse the input SMILES"
+
+[[signature.outputs]]
+name = "gr_antagonist"
+dtype = "float32"
+range = [0.0, 1.0]
+semantics = "P(suppresses the hormone-driven glucocorticoid receptor reporter in the Tox21 qHTS antagonist screen)"
+missing = "NaN when RDKit cannot parse the input SMILES"
+
+[[signature.outputs]]
+name = "gr_cytotox"
+dtype = "float32"
+range = [0.0, 1.0]
+semantics = "P(reduces viability in the counter-screen over the same library). A compound that kills the cell suppresses the reporter and reads as an antagonist, so a high score here qualifies the antagonist column"
+missing = "NaN when RDKit cannot parse the input SMILES"
+
+[dataset]
+name = "Tox21 glucocorticoid receptor qHTS"
+source = "PubChem BioAssay AID 720691 (qHTS assay to identify small molecule agonists of the glucocorticoid receptor (GR) signaling pathway), AID 720692 (qHTS assay to identify small molecule antagonists of the glucocorticoid receptor (GR) signaling pathway), AID 720693 (qHTS assay to identify small molecule antagonists of the glucocorticoid receptor (GR) signaling pathway - cell viability counter screen), rows called Active or Inactive, one row per compound labelled by majority call across its assay records"
+url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/assay/aid/720691/concise/CSV"
+retrieved = "2026-09-06"
+licence = "public-domain"
+redistributable = true
+path = "data/gr_tox21.parquet"
+labels = ["label", "antagonist", "cytotox"]
+sha256 = "fe5cb4b40fe6b9e8ded497e587033b922f2149304740bdb0df7ce040167b65e5"
+n_rows = 6935
+base_rate = 0.022062
+fetch = "python -m vp_gr.data fetch --verify"
+
+[model]
+family = "xgboost-binary"
+features = "combo3"
+fit = "one model per output, each on every compound its endpoint labels minus a 10% scaffold carve used for early stopping"
+weights = "weights.joblib"
+sha256 = "9f7617a32b1473d3121c60046a16c7de4f6611b591bf11367bc86d4c51bcaefd"
+
+[protocol]
+id = "scaffold-shuffle-5seed@1"
+provider = "vp-core"
+core_version = "1.2.0"
+
+[provenance]
+python = "3.11.11"
+rdkit = "2026.03.5"
+xgboost = "3.2.0"
